@@ -1,0 +1,37 @@
+services:
+  backend:
+    build: .
+    container_name: futbol-backend
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      # ✅ CORRECCIÓN ERROR 5: Se cambió 'localhost' por el nombre del servicio Docker 'db_futbol'
+      # para que los contenedores se comuniquen dentro de la red interna de Compose.
+      - DATABASE_URL=postgresql://postgres:password123@db_futbol:5432/futbol_db
+    depends_on:
+      db_futbol:
+        condition: service_healthy
+
+  db_futbol:
+    image: postgres:15-alpine
+    container_name: futbol-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: futbol_db
+    ports:
+      - "5432:5432"
+    volumes:
+      # ✅ CORRECCIÓN ERROR 6: Ruta del volumen corregida de /data/db (MongoDB)
+      # a /var/lib/postgresql/data (ruta real de PostgreSQL).
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d futbol_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

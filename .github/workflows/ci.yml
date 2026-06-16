@@ -1,0 +1,50 @@
+name: CI - FutbolStats Pro
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # ✅ CORRECCIÓN ERROR 2 (parte CI): Se levanta un servicio real de PostgreSQL
+    # en GitHub Actions para que los tests tengan base de datos disponible.
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password123
+          POSTGRES_DB: futbol_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    # ✅ CORRECCIÓN ERROR 2 (parte ENV): Se inyectan las variables de entorno necesarias
+    # para que los tests pasen: NODE_ENV=test y DATABASE_URL apuntando al postgres del servicio.
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:password123@localhost:5432/futbol_db
+
+    steps:
+      - name: ⬇️ Checkout del código
+        uses: actions/checkout@v4
+
+      - name: 🟢 Configurar Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: 📦 Instalar dependencias
+        run: npm ci
+
+      - name: 🧪 Ejecutar tests
+        run: npm test
