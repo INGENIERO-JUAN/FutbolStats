@@ -4,6 +4,27 @@ const pool = require('./config/db');
 const app = express();
 app.use(express.json());
 
+// Crear la tabla al iniciar si no existe e insertar datos de ejemplo
+async function initDB() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS equipos (
+      id SERIAL PRIMARY KEY,
+      nombre VARCHAR(50) NOT NULL,
+      puntos INT DEFAULT 0,
+      diferencia_goles INT DEFAULT 0
+    );
+  `);
+  await pool.query(`
+    INSERT INTO equipos (nombre, puntos, diferencia_goles) VALUES
+      ('ITP F.C.', 9, 5),
+      ('Deportivo Render', 7, 3),
+      ('Atlético Docker', 4, -1),
+      ('Real GitHub', 1, -7)
+    ON CONFLICT DO NOTHING;
+  `);
+  console.log('✅ Tabla equipos lista');
+}
+
 // Endpoint de Salud para Render (Health Check)
 app.get('/api/health', async (req, res) => {
   try {
@@ -27,8 +48,10 @@ app.get('/api/posiciones', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
-    console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
+  initDB().then(() => {
+    app.listen(PORT, () => {
+      console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
+    });
   });
 }
 
